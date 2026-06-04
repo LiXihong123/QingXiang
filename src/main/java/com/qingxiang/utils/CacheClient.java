@@ -68,7 +68,27 @@ public class CacheClient {
         return r;
     }
 
-    private static  final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
+    // 优化后的缓存重建线程池（替换原来的Executors.newFixedThreadPool(10)）
+private static final ExecutorService CACHE_REBUILD_EXECUTOR = new ThreadPoolExecutor(
+    // 核心线程数=CPU核心数，缓存重建是CPU密集型任务
+    Runtime.getRuntime().availableProcessors(),
+    // 最大线程数=核心线程数，不需要非核心线程
+    Runtime.getRuntime().availableProcessors(),
+    0L, TimeUnit.MILLISECONDS,
+    // 有界队列，最多存放100个等待任务，避免OOM
+    new ArrayBlockingQueue<>(100),
+    // 自定义线程工厂，设置有意义的线程名，方便排查问题
+    new ThreadFactory() {
+        private final AtomicInteger threadNumber = new AtomicInteger(1);
+        @Override
+        public Thread newThread(Runnable r) {
+            return new Thread(r, "cache-rebuild-thread-" + threadNumber.getAndIncrement());
+        }
+    },
+    // 自定义拒绝策略：当队列满了，由调用线程自己执行任务
+    // 这样既不会丢失任务，也不会让请求线程直接返回失败
+    new ThreadPoolExecutor.CallerRunsPolicy()
+);
 
     public  <R,ID> R queryWithLogicalExpire(String keyPrefix , ID id, Class<R> type,
                                             Function<ID, R> dbFallback,
