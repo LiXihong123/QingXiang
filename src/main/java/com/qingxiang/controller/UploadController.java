@@ -3,6 +3,7 @@ package com.qingxiang.controller;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.qingxiang.dto.Result;
+import com.qingxiang.enums.ErrorCode;
 import com.qingxiang.utils.SystemConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -38,7 +39,7 @@ public class UploadController {
     public Result deleteBlogImg(@RequestParam("name") String filename) {
         File file = new File(SystemConstants.IMAGE_UPLOAD_DIR, filename);
         if (file.isDirectory()) {
-            return Result.fail("错误的文件名称");
+            return Result.fail(ErrorCode.UPLOAD_FILENAME_INVALID);
         }
         FileUtil.del(file);
         return Result.ok();

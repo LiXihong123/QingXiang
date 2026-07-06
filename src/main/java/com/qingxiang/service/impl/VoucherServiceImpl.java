@@ -7,6 +7,8 @@ import com.qingxiang.mapper.VoucherMapper;
 import com.qingxiang.entity.SeckillVoucher;
 import com.qingxiang.service.ISeckillVoucherService;
 import com.qingxiang.service.IVoucherService;
+import com.qingxiang.utils.RedisConstants;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,9 @@ public class VoucherServiceImpl extends ServiceImpl<VoucherMapper, Voucher> impl
 
     @Resource
     private ISeckillVoucherService seckillVoucherService;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @Override
     public Result queryVoucherOfShop(Long shopId) {
@@ -47,5 +52,9 @@ public class VoucherServiceImpl extends ServiceImpl<VoucherMapper, Voucher> impl
         seckillVoucher.setBeginTime(voucher.getBeginTime());
         seckillVoucher.setEndTime(voucher.getEndTime());
         seckillVoucherService.save(seckillVoucher);
+        // 将库存同步到Redis，供秒杀Lua脚本使用
+        stringRedisTemplate.opsForValue().set(
+                RedisConstants.SECKILL_STOCK_KEY + voucher.getId(),
+                voucher.getStock().toString());
     }
 }

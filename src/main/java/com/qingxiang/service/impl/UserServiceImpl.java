@@ -9,6 +9,7 @@ import com.qingxiang.dto.LoginFormDTO;
 import com.qingxiang.dto.Result;
 import com.qingxiang.dto.UserDTO;
 import com.qingxiang.entity.User;
+import com.qingxiang.enums.ErrorCode;
 import com.qingxiang.mapper.UserMapper;
 import com.qingxiang.service.IUserService;
 import com.qingxiang.utils.RegexUtils;
@@ -47,7 +48,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         //1.校验手机号
         if (RegexUtils.isPhoneInvalid(phone)) {
             //2.如果不符合，返回错误信息
-            return Result.fail("手机号格式错误！");
+            return Result.fail(ErrorCode.USER_PHONE_INVALID);
         }
 
         //3.符合，生成验证码
@@ -74,7 +75,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         String phone = loginForm.getPhone();
         if (RegexUtils.isPhoneInvalid(phone)) {
             //2.如果不符合，返回错误信息
-            return Result.fail("手机号格式错误！");
+            return Result.fail(ErrorCode.USER_PHONE_INVALID);
         }
 
         //2.校验验证码：从session中获取验证码，跟表单中的验证码进行比较
@@ -84,7 +85,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         String code = loginForm.getCode();
         if (cacheCode == null || !cacheCode.equals(code)) {
             //3.不一致就报错
-            return Result.fail("验证码错误");
+            return Result.fail(ErrorCode.USER_CODE_ERROR);
         }
 
         //4.一致，根据手机号查询用户

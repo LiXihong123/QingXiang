@@ -26,7 +26,11 @@ public class CacheClient {
     }
 
     public void set(String key, Object value, Long time, TimeUnit unit) {
-        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(value), time, unit);
+        // 叠加 0~30% 随机时间偏移，防止大批量 Key 同时过期导致缓存雪崩
+        long baseSeconds = unit.toSeconds(time);
+        long randomSeconds = (long) (baseSeconds * 0.3 * Math.random());
+        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(value),
+                baseSeconds + randomSeconds, TimeUnit.SECONDS);
     }
 
     public void setWithLogicalExpire(String key, Object value, Long time, TimeUnit unit) {
@@ -84,8 +88,8 @@ public class CacheClient {
                     return new Thread(r, "cache-rebuild-thread-" + threadNumber.getAndIncrement());
                 }
             },
-            // 自定义拒绝策略：当队列满了，由调用线程自己执行任务
-            // 这样既不会丢失任务，也不会让请求线程直接返回失败
+            // 自定义拒绝策略：当队列满了由调用线程自己执行任务
+            // 既不会丢失任务，也不会让请求线程直接返回失败
             new ThreadPoolExecutor.CallerRunsPolicy()
     );
 
